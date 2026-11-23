@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calendário Financeiro</title>
+<style>
+:root{--bg:#4a4a4a;--bg2:#3d3d3d;--g:#73BF94;--gd:#2f4d3b;--tx:#f2f2f2;--mut:#b5b5b5;--red:#ef8a80;--yel:#f0cf74;--ok:#74c192}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:#2b2b2b;color:var(--tx);font-family:"Segoe UI",Inter,system-ui,sans-serif;display:flex;justify-content:center}
+#app{width:100%;max-width:420px;height:100dvh;background:var(--bg);display:flex;flex-direction:column;position:relative;overflow:hidden;padding-top:env(safe-area-inset-top,0)}
+header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:2px solid var(--g)}
+.avatar{width:38px;height:38px;border-radius:50%;background:#d9d9d9;display:grid;place-items:center;overflow:hidden}
+.avatar svg{width:30px;height:30px;margin-top:8px;fill:#fff}
+.icon-btn{background:none;border:0;color:var(--g);cursor:pointer;padding:2px}
+.icon-btn svg{width:36px;height:36px;stroke:var(--g);fill:none;stroke-width:1.6}
+main{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;padding:14px 18px 8px}
+.datebar{background:var(--g);color:#1f2f26;border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;font-weight:700}
+.datebar .num{font-size:30px;line-height:1;min-width:60px}
+.datebar .wk{font-size:18px;text-align:center;flex:1;text-transform:capitalize}
+.datebar .yr{font-size:16px;min-width:60px;text-align:right}
+.box{flex:1 1 150px;min-height:120px;border:2px solid var(--g);border-radius:14px;padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.empty{margin:auto;text-align:center;color:var(--mut);font-size:14px;line-height:1.5;padding:0 10px}
+.item{background:var(--bg2);border-radius:10px;padding:9px 10px;border-left:5px solid var(--yel)}
+.item.pago{border-color:var(--ok)}.item.atrasado{border-color:var(--red)}
+.item .top{display:flex;justify-content:space-between;gap:8px;font-weight:600;font-size:15px}
+.item .val{white-space:nowrap}
+.item .meta{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+.chip{font-size:12px;padding:2px 8px;border-radius:20px;background:var(--yel);color:#3a2f08;font-weight:600}
+.pago .chip{background:var(--ok);color:#173524}.atrasado .chip{background:var(--red);color:#4a1410}
+.sm{font-size:13px;border:1px solid var(--g);background:none;color:var(--g);border-radius:8px;padding:4px 9px;cursor:pointer;font-family:inherit}
+.sm.fill{background:var(--g);color:#1f2f26;font-weight:600}.sm.del{border-color:#777;color:var(--mut);margin-left:auto}
+.add{background:var(--g);color:#1f2f26;border:0;border-radius:10px;padding:9px;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit;flex-shrink:0}
+.monthrow{display:flex;justify-content:center;align-items:center;gap:18px;color:var(--g);font-weight:700}
+.monthrow span{font-size:26px;min-width:190px;text-align:center;text-transform:capitalize}
+.monthrow button{background:none;border:0;color:var(--g);font-size:28px;cursor:pointer;padding:0 8px;font-family:inherit}
+.wkh,.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
+.wkh div{text-align:center;font-size:11px;color:var(--mut)}
+.grid{flex-shrink:0}
+.day{aspect-ratio:1/0.92;border-radius:11px;border:0;background:var(--g);color:#1f2f26;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;position:relative}
+.day.sel{background:#fff;outline:3px solid var(--g)}
+.day.today:not(.sel){box-shadow:inset 0 0 0 3px #1f2f26}
+.dots{display:flex;gap:3px;height:6px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--yel);box-shadow:0 0 0 1px #1f2f26}
+.dots i.pago{background:#1f7a46}.dots i.atrasado{background:#d9362a}
+.pad{visibility:hidden}
+nav{display:flex;justify-content:space-around;align-items:flex-end;padding:8px 6px calc(10px + env(safe-area-inset-bottom,0));color:var(--g);font-weight:700;font-size:14px}
+nav button{background:none;border:0;color:var(--g);font-weight:700;font-size:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit}
+nav .ic{font-size:30px;height:34px;line-height:34px}
+.sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;z-index:5}
+.sheet-bg.on{display:flex}
+.sheet{background:var(--bg);width:100%;max-height:88%;overflow-y:auto;border-top:3px solid var(--g);border-radius:18px 18px 0 0;padding:16px 18px calc(18px + env(safe-area-inset-bottom,0))}
+.sheet h2{color:var(--g);font-size:20px;margin-bottom:12px;display:flex;justify-content:space-between}
+.sheet h2 button{background:none;border:0;color:var(--mut);font-size:22px;cursor:pointer}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,select{width:100%;padding:10px;border-radius:9px;border:2px solid #666;background:var(--bg2);color:var(--tx);font-size:16px;font-family:inherit}
+input:focus,select:focus,button:focus-visible{outline:3px solid #fff;outline-offset:1px}
+.row2{display:flex;gap:10px}.row2>div{flex:1}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.stat{background:var(--bg2);border-radius:10px;padding:10px}.stat b{display:block;font-size:18px;margin-top:2px}.stat small{color:var(--mut)}
+.hist{background:var(--bg2);border-radius:9px;padding:8px 10px;margin-top:6px;display:flex;justify-content:space-between;font-size:14px;gap:8px}
+.hist small{color:var(--mut);display:block}
+.bank{display:flex;justify-content:space-between;align-items:center;background:var(--bg2);border-radius:10px;padding:10px;margin-top:8px}
+.note{font-size:12px;color:var(--mut);margin-top:12px;line-height:1.4}
+.toast{position:absolute;top:60px;left:14px;right:14px;background:var(--g);color:#1f2f26;font-weight:600;padding:10px 12px;border-radius:10px;z-index:9;display:none;font-size:14px}
+.toast.on{display:block}
+.prio{font-size:12px;padding:2px 8px;border-radius:20px;font-weight:600;background:#f2f2f2;color:#333}
+.prio.menos{background:none;color:#c9c9c9;border:1.5px dashed #9a9a9a;padding:0 7px}
+.stepn{color:var(--mut);font-size:14px}.q{font-size:22px;font-weight:700;margin:6px 0 12px;line-height:1.25}
+.qk{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.wnav{display:flex;gap:10px;margin-top:18px}.wnav button{flex:1}
+.big{display:block;width:100%;text-align:left;font-family:inherit;font-size:20px;font-weight:700;padding:16px;margin-top:10px;border-radius:12px;border:2px solid var(--g);background:var(--bg2);color:var(--tx);cursor:pointer}
+.big small{display:block;font-size:15px;font-weight:400;color:var(--mut);margin-top:3px}
+.big.on{background:var(--g);color:#1f2f26}.big.on small{color:#2f4d3b}
+/* Modo simples: fontes ampliadas, botões maiores */
+.simple main{overflow-y:auto}
+.simple .box{flex:1 0 230px}
+.simple .datebar .num{font-size:38px}.simple .datebar .wk{font-size:23px}.simple .datebar .yr{font-size:20px}
+.simple .item{padding:12px}.simple .item .top{font-size:21px}.simple .item .meta{gap:10px;margin-top:10px}
+.simple .chip,.simple .prio{font-size:15px;padding:4px 11px}.simple .prio.menos{padding:2px 10px}
+.simple .sm{font-size:18px;padding:12px 15px;min-height:50px;border-radius:11px}
+.simple .add{font-size:20px;padding:16px;min-height:58px;border-radius:12px}
+.simple .empty{font-size:19px}
+.simple .monthrow span{font-size:30px}.simple .monthrow button{font-size:38px;padding:0 12px}
+.simple .wkh div{font-size:14px}.simple .day{font-size:21px}
+.simple nav{font-size:16px}.simple nav .ic{transform:scale(1.15)}
+.simple .sheet h2{font-size:25px}.simple .sheet h2 button{font-size:30px;padding:4px 8px}
+.simple label{font-size:17px}.simple input,.simple select{font-size:20px;padding:14px}
+.simple .stat small{font-size:15px}.simple .stat b{font-size:23px}
+.simple .hist{font-size:18px}.simple .hist small{font-size:14px}
+.simple .note{font-size:15px}.simple .bank{font-size:18px;padding:14px}
+.simple .toast{font-size:18px}
+@media(prefers-reduced-motion:no-preference){.sheet{animation:up .2s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.4}}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="toast" id="toast"></div>
+  <header>
+    <div class="avatar"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M2 24c0-6 4-9 10-9s10 3 10 9z"/></svg></div>
+    <button class="icon-btn" id="bSet" aria-label="Configurações"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </header>
+  <main>
+    <div class="datebar"><div class="num" id="dNum"></div><div class="wk" id="dWk"></div><div class="yr" id="dYr"></div></div>
+    <div class="box" id="box"></div>
+    <div class="monthrow"><button id="prev" aria-label="Mês anterior">‹</button><span id="mes"></span><button id="next" aria-label="Próximo mês">›</button></div>
+    <div>
+      <div class="wkh"><div>dom</div><div>seg</div><div>ter</div><div>qua</div><div>qui</div><div>sex</div><div>sáb</div></div>
+      <div class="grid" id="grid" style="margin-top:5px"></div>
+    </div>
+  </main>
+  <nav>
+    <button id="bOF"><span class="ic"><img src="logo open finance.png" width="40"></span><span class="lb">Open Finance</span></button>
+    <button id="bSal"><span class="ic">$</span><span class="lb" id="lbSal">Saldo</span></button>
+    <button id="bVin"><span class="ic"><img src="icone vincular.png" width="50"></span><span class="lb" id="lbVin">Vincular conta</span></button>
+  </nav>
+  <div class="sheet-bg" id="bg"><div class="sheet" id="sheet"></div></div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const brl=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const parse=s=>{const[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c)};
+const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const todayISO=()=>iso(new Date());
+
+/* ---------- Estado (salvo no navegador) ---------- */
+const KEY='calfin_v1';
+let S;
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!S){
+  const t=new Date(),d=n=>iso(new Date(t.getFullYear(),t.getMonth(),t.getDate()+n));
+  S={bills:[
+    {id:1,desc:'Aluguel',valor:1800,data:d(0),pago:false,prio:'obrig'},
+    {id:2,desc:'Conta de luz',valor:187.4,data:d(0),pago:false,prio:'obrig'},
+    {id:3,desc:'Internet',valor:119.9,data:d(3),pago:false,prio:'obrig'},
+    {id:4,desc:'Cartão de crédito',valor:942.15,data:d(-4),pago:false,prio:'obrig'},
+    {id:5,desc:'Academia',valor:99,data:d(-6),pago:true,pagoEm:d(-7),prio:'menos'},
+    {id:6,desc:'Streaming',valor:39.9,data:d(8),pago:false,prio:'menos'}
+  ],next:7,notif:{on:false,dias:1},notified:{},banco:null};
+}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+let sel=todayISO(),view=new Date();view.setDate(1);
+
+const status=b=>b.pago?'pago':(b.data<todayISO()?'atrasado':'pendente');
+const label={pago:'Paga',atrasado:'Atrasada',pendente:'Pendente'};
+const billsOn=d=>S.bills.filter(b=>b.data===d);
+
+/* ---------- Prioridade e Modo simples ---------- */
+const T=(n,s)=>S.simples?s:n;                       // texto normal / texto do modo simples
+const LS={pago:'Já paguei',atrasado:'Passou do prazo',pendente:'Falta pagar'};
+const PL={obrig:['Obrigatória','Precisa pagar'],menos:['Menos importante','Pode esperar']};
+const MEN=/stream|netflix|spotify|disney|prime|hbo|academia|assinatura|jogo|game|lazer|restaurante|delivery|ifood|cinema|clube/i;
+const guess=d=>MEN.test(d)?'menos':'obrig';        // sugestão automática pelo nome da conta
+const prioOf=b=>b.prio||guess(b.desc);
+function applyMode(){
+  $('app').classList.toggle('simple',!!S.simples);
+  $('lbSal').textContent=T('Saldo','Meu dinheiro');
+  $('lbVin').textContent=T('Vincular conta','Ligar ao banco');
+}
+
+/* ---------- Render ---------- */
+function render(){
+  applyMode();
+  const d=parse(sel);
+  $('dNum').textContent=String(d.getDate()).padStart(2,'0');
+  $('dWk').textContent=d.toLocaleDateString('pt-BR',{weekday:'long'});
+  $('dYr').textContent=d.getFullYear();
+
+  const list=billsOn(sel).sort((a,b)=>(prioOf(a)==='obrig'?0:1)-(prioOf(b)==='obrig'?0:1));
+  let h='';
+  if(!list.length)h+='<div class="empty">'+T('Nenhum compromisso neste dia.<br>Toque em “Nova conta” para cadastrar.','Não há contas neste dia.<br>Toque em “Adicionar uma conta” para cadastrar.')+'</div>';
+  list.forEach(b=>{const st=status(b);
+    h+=`<div class="item ${st}"><div class="top"><span>${esc(b.desc)}</span><span class="val">${brl(b.valor)}</span></div>
+    <div class="meta"><span class="chip">${T(label[st],LS[st])}</span><span class="prio ${prioOf(b)}">${PL[prioOf(b)][S.simples?1:0]}</span>
+    <button class="sm ${b.pago?'':'fill'}" data-pay="${b.id}">${b.pago?T('Desfazer','Ainda não paguei'):T('Marcar como paga','Já paguei')}</button>
+    <button class="sm del" data-del="${b.id}" aria-label="Excluir">${T('Excluir','Apagar')}</button></div></div>`;});
+  h+='<button class="add" id="addBtn">'+T('+ Nova conta neste dia','+ Adicionar uma conta')+'</button>';
+  $('box').innerHTML=h;
+  $('addBtn').onclick=()=>openForm();
+
+  $('mes').textContent=view.toLocaleDateString('pt-BR',{month:'long',year:view.getFullYear()!==new Date().getFullYear()?'numeric':undefined});
+  const y=view.getFullYear(),m=view.getMonth(),n=new Date(y,m+1,0).getDate(),off=view.getDay();
+  let g='';
+  for(let i=0;i<off;i++)g+='<div class="day pad"></div>';
+  for(let i=1;i<=n;i++){
+    const k=iso(new Date(y,m,i)),bs=billsOn(k);
+    const dots=bs.slice(0,3).map(b=>`<i class="${status(b)}"></i>`).join('');
+    g+=`<button class="day${k===sel?' sel':''}${k===todayISO()?' today':''}" data-d="${k}" aria-label="Dia ${i}${bs.length?', '+bs.length+' conta(s)':''}">${i}<span class="dots">${dots}</span></button>`;
+  }
+  $('grid').innerHTML=g;
+}
+$('grid').onclick=e=>{const b=e.target.closest('[data-d]');if(b){sel=b.dataset.d;render()}};
+$('box').onclick=e=>{
+  const p=e.target.closest('[data-pay]'),x=e.target.closest('[data-del]');
+  if(p){const b=S.bills.find(b=>b.id==p.dataset.pay);b.pago=!b.pago;b.pagoEm=b.pago?todayISO():null;save();render();toast(b.pago?T('Conta registrada como paga.','Muito bem! Conta marcada como paga.'):T('Pagamento desfeito.','Tudo bem, voltou para “Falta pagar”.'))}
+  if(x&&confirm(T('Excluir esta conta?','Quer apagar esta conta?'))){S.bills=S.bills.filter(b=>b.id!=x.dataset.del);save();render()}
+};
+function goMonth(n){view=new Date(view.getFullYear(),view.getMonth()+n,1);render()}
+$('prev').onclick=()=>goMonth(-1);$('next').onclick=()=>goMonth(1);
+
+/* ---------- Janelas ---------- */
+function sheet(title,html){$('sheet').innerHTML=`<h2>${title}<button id="x" aria-label="Fechar">✕</button></h2>${html}`;$('bg').classList.add('on');$('x').onclick=close}
+function close(){$('bg').classList.remove('on')}
+$('bg').onclick=e=>{if(e.target===$('bg'))close()};
+
+function openForm(){
+  if(S.simples)return openWizard();
+  sheet('Nova conta',`<label for="fd">Descrição</label><input id="fd" placeholder="Ex.: Conta de água" maxlength="40">
+  <div class="row2"><div><label for="fv">Valor (R$)</label><input id="fv" type="number" step="0.01" min="0" inputmode="decimal" placeholder="0,00"></div>
+  <div><label for="fdt">Vencimento</label><input id="fdt" type="date" value="${sel}"></div></div>
+  <label for="fp">Prioridade</label><select id="fp"><option value="obrig">Obrigatória (ex.: luz, água)</option><option value="menos">Menos importante (ex.: streaming)</option></select>
+  <label for="fr">Repetir</label><select id="fr"><option value="1">Não repetir</option><option value="3">Pelos próximos 3 meses</option><option value="6">Pelos próximos 6 meses</option><option value="12">Pelos próximos 12 meses</option></select>
+  <button class="add" id="ok" style="width:100%;margin-top:16px">Salvar conta</button>`);
+  $('fd').focus();
+  let touched=false;$('fp').onchange=()=>touched=true;
+  $('fd').oninput=()=>{if(!touched)$('fp').value=guess($('fd').value)};
+  $('ok').onclick=()=>{
+    const desc=$('fd').value.trim(),valor=parseFloat($('fv').value),data=$('fdt').value,rep=+$('fr').value;
+    if(!desc||!(valor>=0)||isNaN(valor)||!data){toast('Preencha descrição, valor e vencimento.');return}
+    addBills({desc,valor,data,rep,prio:$('fp').value});
+  };
+}
+
+function addBills({desc,valor,data,rep,prio}){
+  const b=parse(data);
+  for(let i=0;i<rep;i++){
+    const dd=new Date(b.getFullYear(),b.getMonth()+i,b.getDate());
+    if(dd.getDate()!==b.getDate())dd.setDate(0);
+    S.bills.push({id:S.next++,desc,valor,data:iso(dd),pago:false,prio});
+  }
+  sel=data;view=new Date(b.getFullYear(),b.getMonth(),1);save();close();render();toast(T('Conta cadastrada.','Pronto! Conta adicionada.'));
+}
+
+/* Modo simples: uma pergunta por tela, no lugar do formulário grande */
+function openWizard(){
+  const f={desc:'',valor:'',data:sel,prio:'obrig',rep:1};let i=0;
+  const quick=['Luz','Água','Aluguel','Internet','Streaming'];
+  const steps=[
+    {body:()=>`<div class="qk">${quick.map(n=>`<button class="sm" data-q="${n}">${n}</button>`).join('')}</div><label for="w">Ou escreva o nome aqui:</label><input id="w" maxlength="40" value="${esc(f.desc)}" placeholder="Ex.: Conta de água">`,
+     q:'Qual é o nome da conta?',read:()=>{f.desc=$('w').value.trim();if(!f.desc)return'Escreva o nome da conta.';f.prio=guess(f.desc)}},
+    {q:'Qual é o valor?',body:()=>`<label for="w">Valor em reais</label><input id="w" type="number" step="0.01" min="0" inputmode="decimal" value="${f.valor}" placeholder="Ex.: 150,00">`,
+     read:()=>{const v=parseFloat($('w').value);if(isNaN(v)||v<0)return'Digite o valor da conta.';f.valor=v}},
+    {q:'Quando ela vence?',body:()=>`<label for="w">Dia do vencimento</label><input id="w" type="date" value="${f.data}">`,
+     read:()=>{const v=$('w').value;if(!v)return'Escolha o dia do vencimento.';f.data=v}},
+    {q:'Essa conta é obrigatória?',key:'prio',choice:[['obrig','Sim, precisa pagar','Ex.: luz, água, aluguel'],['menos','Não, pode esperar','Ex.: streaming, lazer']]},
+    {q:'Ela se repete todo mês?',key:'rep',choice:[[12,'Sim, todo mês','Aparece pelos próximos 12 meses'],[1,'Não, só desta vez','']]}
+  ];
+  function draw(){
+    const s=steps[i],last=i===steps.length-1;
+    const body=s.choice?s.choice.map(([v,t,d],k)=>`<button class="big${f[s.key]===v?' on':''}" data-c="${k}">${t}<small>${d}</small></button>`).join(''):s.body();
+    sheet('Adicionar conta',`<div class="stepn">Passo ${i+1} de ${steps.length}</div><div class="q">${s.q}</div>${body}<div class="wnav">${i?'<button class="sm" id="wb">Voltar</button>':''}${s.choice?'':'<button class="add" id="wn">Próximo</button>'}</div>`);
+    const inp=document.querySelector('#sheet input');
+    if(inp){inp.focus();inp.onkeydown=e=>{if(e.key==='Enter')$('wn').click()}}
+    document.querySelectorAll('[data-q]').forEach(el=>el.onclick=()=>{$('w').value=el.dataset.q;$('w').focus()});
+    document.querySelectorAll('[data-c]').forEach(el=>el.onclick=()=>{f[s.key]=s.choice[el.dataset.c][0];if(last)addBills(f);else{i++;draw()}});
+    if($('wb'))$('wb').onclick=()=>{if(s.read)s.read();i--;draw()};
+    if($('wn'))$('wn').onclick=()=>{const err=s.read();if(err){toast(err);return}i++;draw()};
+  }
+  draw();
+}
+
+function openSaldo(){
+  const y=view.getFullYear(),m=view.getMonth();
+  const mb=S.bills.filter(b=>{const d=parse(b.data);return d.getFullYear()===y&&d.getMonth()===m});
+  const sum=f=>mb.filter(f).reduce((a,b)=>a+b.valor,0);
+  const pend=sum(b=>status(b)==='pendente'),atr=sum(b=>status(b)==='atrasado'),pg=sum(b=>b.pago);
+  const nome=view.toLocaleDateString('pt-BR',{month:'long'});
+  const hist=S.bills.filter(b=>b.pago).sort((a,b)=>(b.pagoEm||'').localeCompare(a.pagoEm||''));
+  let h=`<div class="stats"><div class="stat"><small>${T('A pagar em','Falta pagar em')} ${nome}</small><b>${brl(pend)}</b></div>
+  <div class="stat"><small>${T('Em atraso','Contas atrasadas')}</small><b style="color:var(--red)">${brl(atr)}</b></div>
+  <div class="stat"><small>${T('Pago em','Já paguei em')} ${nome}</small><b style="color:var(--ok)">${brl(pg)}</b></div>
+  <div class="stat"><small>${S.banco?'Saldo na conta':'Conta vinculada'}</small><b>${S.banco?brl(S.banco.saldo):'—'}</b></div></div>`;
+  if(S.banco)h+=`<div class="stat" style="margin-bottom:10px"><small>${T('Saldo após contas pendentes e atrasadas do mês','Quanto sobra se eu pagar tudo deste mês')}</small><b>${brl(S.banco.saldo-pend-atr)}</b></div>`;
+  h+=`<h2 style="font-size:16px;margin:14px 0 0">${T('Histórico de pagamentos','Contas que já paguei')}</h2>`;
+  h+=hist.length?hist.map(b=>`<div class="hist"><div>${esc(b.desc)}<small>Venc. ${parse(b.data).toLocaleDateString('pt-BR')} · pago em ${parse(b.pagoEm||b.data).toLocaleDateString('pt-BR')}</small></div><b>${brl(b.valor)}</b></div>`).join(''):'<div class="note">'+T('Nenhuma conta paga ainda.','Você ainda não pagou nenhuma conta.')+'</div>';
+  sheet('Saldo',h);
+}
+
+function openBank(){
+  const bancos=['Banco Aurora','Banco Horizonte','Caixa Verde','Nubanco Demo'];
+  let h=S.banco?`<div class="bank"><div><b>${esc(S.banco.nome)}</b><br><small style="color:var(--mut)">Saldo: ${brl(S.banco.saldo)}</small></div><button class="sm" id="unl">Desvincular</button></div>`
+  :'<div class="note" style="margin:0 0 6px">Escolha uma instituição para vincular a conta.</div>'+bancos.map(n=>`<div class="bank"><b>${n}</b><button class="sm fill" data-b="${n}">Vincular</button></div>`).join('');
+  h+='<div class="note">Simulação: nenhum dado bancário real é acessado. Em uma versão final, a vinculação usaria o Open Finance para trazer saldo e boletos automaticamente.</div>';
+  sheet('Open Finance',h);
+  $('sheet').onclick=e=>{const b=e.target.closest('[data-b]');
+    if(b){S.banco={nome:b.dataset.b,saldo:Math.round((2000+Math.random()*6000)*100)/100};save();toast('Conta vinculada (simulação).');openBank()}
+    if(e.target.id==='unl'){S.banco=null;save();openBank()}};
+}
+
+function openSettings(){
+  const perm='Notification' in window?Notification.permission:'unsupported';
+  sheet('Configurações',`<button class="add" id="ms" style="width:100%">${S.simples?'Desativar modo simples':'Ativar modo simples'}</button>
+  <div class="note" style="margin-top:6px">Letras maiores, botões grandes, linguagem fácil e cadastro de conta passo a passo.</div>
+  <label for="nd">${T('Avisar quantos dias antes do vencimento','Avisar quantos dias antes de vencer')}</label>
+  <select id="nd">${[0,1,2,3,5,7].map(n=>`<option value="${n}"${S.notif.dias===n?' selected':''}>${n===0?'No dia':n+(n===1?' dia antes':' dias antes')}</option>`).join('')}</select>
+  <button class="add" id="nt" style="width:100%;margin-top:14px">${S.notif.on?T('Desativar notificações','Desligar os avisos'):T('Ativar notificações','Ligar os avisos')}</button>
+  <div class="note">${perm==='denied'?'As notificações estão bloqueadas no navegador. Libere nas permissões do site.':'As notificações aparecem enquanto o app estiver aberto. Se o navegador não permitir, o aviso aparece dentro do app.'}</div>
+  <button class="sm" id="rs" style="margin-top:16px">Restaurar dados de exemplo</button>`);
+  $('ms').onclick=()=>{S.simples=!S.simples;save();render();openSettings()};
+  $('nd').onchange=()=>{S.notif.dias=+$('nd').value;save();checkNotif(true)};
+  $('nt').onclick=async()=>{
+    if(!S.notif.on&&'Notification' in window&&Notification.permission==='default'){try{await Notification.requestPermission()}catch(e){}}
+    S.notif.on=!S.notif.on;S.notified={};save();openSettings();if(S.notif.on)checkNotif(true);
+  };
+  $('rs').onclick=()=>{if(confirm('Apagar tudo e restaurar os exemplos?')){localStorage.removeItem(KEY);location.reload()}};
+}
+
+/* ---------- Notificações ---------- */
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),3500)}
+function checkNotif(force){
+  if(!S.notif.on)return;
+  const lim=iso(new Date(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()+S.notif.dias));
+  const due=S.bills.filter(b=>!b.pago&&b.data<=lim);
+  const novos=due.filter(b=>S.notified[b.id]!==todayISO());
+  if(!novos.length){if(force)toast('Nenhuma conta próxima do vencimento.');return}
+  novos.forEach(b=>S.notified[b.id]=todayISO());save();
+  const msg=novos.length===1?`${novos[0].desc} (${brl(novos[0].valor)}) ${novos[0].data<todayISO()?'está atrasada':'vence '+(novos[0].data===todayISO()?'hoje':'em breve')}.`:`${novos.length} contas vencendo ou atrasadas.`;
+  if('Notification' in window&&Notification.permission==='granted'){try{new Notification('Calendário Financeiro',{body:msg})}catch(e){}}
+  toast(msg);
+}
+
+$('bSet').onclick=openSettings;$('bSal').onclick=openSaldo;$('bOF').onclick=openBank;$('bVin').onclick=openBank;
+render();setTimeout(()=>checkNotif(false),600);setInterval(()=>checkNotif(false),60000);
+</script>
+</body>
+</html>
